@@ -1,13 +1,12 @@
 package info.batey.akka
 
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
-import akka.actor.typed.scaladsl._
-import info.batey.akka.TypedLockProtocol._
-import TypedActors._
-import akka.actor.Actor
+import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist.{Find, Register}
 import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.scaladsl._
 import akka.util.Timeout
+import info.batey.akka.TypedActors._
+import info.batey.akka.TypedLockProtocol._
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -26,7 +25,7 @@ object TypedLockProtocol {
 
 object TypedActors {
 
-  def locked(by: ActorRef[LockStatus]): Behavior[LockProtocol] = Behaviors.immutable[LockProtocol] {
+  def locked(by: ActorRef[LockStatus]): Behavior[LockProtocol] = Behaviors.receive[LockProtocol] {
     case (ctx, Lock(who)) =>
       who ! Taken(by)
       Behaviors.same
@@ -37,7 +36,7 @@ object TypedActors {
 
   }
 
-  val unlocked: Behavior[LockProtocol] = Behaviors.immutable[LockProtocol] {
+  val unlocked: Behavior[LockProtocol] = Behaviors.receive[LockProtocol] {
     case (ctx, Lock(who)) =>
       who ! Granted
       locked(who)
@@ -52,7 +51,7 @@ object Example extends App {
     val lock = initialCtx.spawn(unlocked, "lock-a")
     lock ! Lock(initialCtx.self)
 
-    Behaviors.immutable {
+    Behaviors.receive {
       case (ctx, Granted) =>
         ctx.log.info("Yay I have the Lock")
 
@@ -82,7 +81,7 @@ object ReceptionistExample extends App {
   final case object LockNotAvailable extends NeedsLock
   final case object LockGranted extends NeedsLock
 
-  val needsLockGrant = Behaviors.immutable[NeedsLock] {
+  val needsLockGrant = Behaviors.receive[NeedsLock] {
     case (ctx, LockGranted) =>
       ctx.log.info("Yay lock, but what do I do with it??")
       Behaviors.same
@@ -100,7 +99,7 @@ object ReceptionistExample extends App {
         LockNotAvailable
     }
 
-    Behaviors.immutable[NeedsLock] {
+    Behaviors.receive[NeedsLock] {
       case (ctx, LockActorAvailable(lockActor)) =>
         ctx.log.info("Lock actor is available, time to get it")
         ctx.ask(lockActor)(Lock) {

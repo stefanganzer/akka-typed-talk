@@ -4,7 +4,7 @@ lazy val root = (project in file("."))
   .settings(
     inThisBuild(List(
       organization := "info.batey.akka",
-      scalaVersion := "2.12.4",
+      scalaVersion := "2.12.8",
       version := "0.1.0-SNAPSHOT"
     )))
   .settings(
